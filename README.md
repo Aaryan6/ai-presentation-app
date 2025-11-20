@@ -1,7 +1,52 @@
-## AI Presentation Generator App
+# AI Presentation Generator App
 
-### Goal
+Create stunning, professional presentations in minutes using the power of AI.
+
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-00a67e)
+
+## Overview
 Enable users to quickly create professional, visually appealing presentations using AI, demonstrating the practical value of AI in everyday work tasks.
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+ installed
+- OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <your-repo-url>
+cd ai-presentation-app
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+```
+
+4. Add your OpenAI API key to `.env`:
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+5. Run the development server:
+```bash
+npm run dev
+```
+
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Features Implemented
 
 ### Core Features
 1. **Input Form**
@@ -123,3 +168,97 @@ Generate button on final step
 4. Loading state (30-60 seconds) with progress messages
 5. See generated presentation → Edit as needed
 6. Email gate for export → Download PDF/HTML
+
+## Project Structure
+
+```
+ai-presentation-app/
+├── app/                      # Next.js App Router
+│   ├── api/
+│   │   └── generate/        # AI generation API endpoint
+│   ├── create/              # Multi-step form page
+│   ├── editor/              # Presentation editor
+│   ├── layout.tsx           # Root layout
+│   ├── page.tsx             # Landing page
+│   └── globals.css          # Global styles
+├── components/
+│   ├── presentation/        # Presentation components
+│   │   ├── SlideRenderer.tsx
+│   │   └── SlideTemplates.tsx
+│   └── ui/                  # Reusable UI components
+├── lib/
+│   ├── store.ts             # Zustand state management
+│   └── export.ts            # PDF/HTML export utilities
+├── types/
+│   └── presentation.ts      # TypeScript types
+└── public/                  # Static assets
+```
+
+## Available Templates
+
+1. **Modern** - Clean, gradient-based design with bold typography
+2. **Professional** - Classic business presentation style
+3. **Minimal** - Simple, elegant design with maximum readability
+4. **Creative** - Vibrant, eye-catching design with dynamic elements
+
+## Color Schemes
+
+- Ocean Blue
+- Forest Green
+- Sunset Orange
+- Royal Purple
+
+## Tech Stack Details
+
+- **Frontend Framework:** Next.js 15 with App Router
+- **Language:** TypeScript 5.7
+- **Styling:** Tailwind CSS 3.4
+- **AI Integration:** OpenAI GPT-4 Turbo
+- **State Management:** Zustand
+- **Drag & Drop:** react-beautiful-dnd
+- **PDF Export:** jsPDF + html2canvas
+- **Icons:** Lucide React
+
+## Development
+
+```bash
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Run linting
+npm run lint
+```
+
+## Deployment
+
+This app can be deployed to Vercel, Netlify, or any platform that supports Next.js:
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add `OPENAI_API_KEY` to environment variables
+4. Deploy
+
+## Future Enhancements
+
+- [ ] User authentication and saved presentations
+- [ ] Database integration (Supabase/PostgreSQL)
+- [ ] Individual slide regeneration
+- [ ] PowerPoint (PPTX) export
+- [ ] Collaborative editing
+- [ ] Custom branding options
+- [ ] AI-generated images for slides
+- [ ] Presenter mode with notes view
+
+## License
+
+MIT License - feel free to use this project for personal or commercial purposes.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
