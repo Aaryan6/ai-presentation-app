@@ -17,7 +17,7 @@ export default function CreatePage() {
     tone: 'professional',
     targetAudience: '',
     additionalContext: '',
-    template: 'modern',
+    template: 'vibrant-yellow',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -236,21 +236,48 @@ export default function CreatePage() {
               </h2>
 
               <div className="grid grid-cols-2 gap-4">
-                {(['modern', 'professional', 'minimal', 'creative'] as const).map(
-                  (template) => (
+                {[
+                  {
+                    id: 'vibrant-yellow' as const,
+                    name: 'Vibrant Yellow',
+                    preview: 'bg-gradient-to-br from-yellow-300 via-yellow-200 to-yellow-100',
+                    description: 'Bold and energetic with playful elements'
+                  },
+                  {
+                    id: 'elegant-purple' as const,
+                    name: 'Elegant Purple',
+                    preview: 'bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100',
+                    description: 'Sophisticated and refined design'
+                  },
+                  {
+                    id: 'modern-gradient' as const,
+                    name: 'Modern Gradient',
+                    preview: 'bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500',
+                    description: 'Contemporary with stunning gradients'
+                  },
+                  {
+                    id: 'professional-blue' as const,
+                    name: 'Professional Blue',
+                    preview: 'bg-gradient-to-br from-blue-400 via-blue-300 to-blue-200',
+                    description: 'Classic and professional'
+                  },
+                ].map((template) => (
                     <button
-                      key={template}
-                      onClick={() => setFormData({ ...formData, template })}
-                      className={`p-6 rounded-xl border-2 transition-all ${
-                        formData.template === template
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                      key={template.id}
+                      onClick={() => setFormData({ ...formData, template: template.id })}
+                      className={`p-4 rounded-xl border-2 transition-all ${
+                        formData.template === template.id
+                          ? 'border-blue-600 bg-blue-50 shadow-lg'
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow'
                       }`}
                     >
-                      <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-3 flex items-center justify-center">
-                        <span className="text-gray-500 capitalize">{template}</span>
+                      <div className={`aspect-video ${template.preview} rounded-lg mb-3 flex items-center justify-center relative overflow-hidden`}>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-16 h-16 bg-white/30 backdrop-blur-sm rounded-lg"></div>
+                        </div>
                       </div>
-                      <h3 className="font-semibold text-gray-800 capitalize">{template}</h3>
+                      <h3 className="font-semibold text-gray-800 mb-1">{template.name}</h3>
+                      <p className="text-xs text-gray-600">{template.description}</p>
                     </button>
                   )
                 )}

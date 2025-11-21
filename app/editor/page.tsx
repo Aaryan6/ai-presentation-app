@@ -13,9 +13,11 @@ import {
   Edit3,
   GripVertical,
   Sparkles,
+  Maximize,
 } from 'lucide-react';
 import { usePresentationStore } from '@/lib/store';
 import SlideRenderer from '@/components/presentation/SlideRenderer';
+import FullScreenPresentation from '@/components/presentation/FullScreenPresentation';
 import { COLOR_SCHEMES } from '@/types/presentation';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
@@ -37,6 +39,7 @@ export default function EditorPage() {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showFullScreen, setShowFullScreen] = useState(false);
 
   useEffect(() => {
     if (!currentPresentation) {
@@ -135,6 +138,13 @@ export default function EditorPage() {
               Colors
             </button>
             <button
+              onClick={() => setShowFullScreen(true)}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Maximize className="w-4 h-4" />
+              Present
+            </button>
+            <button
               onClick={() => setShowExportModal(true)}
               className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-2 transition-colors"
             >
@@ -149,21 +159,26 @@ export default function EditorPage() {
           <div className="mt-4 p-4 bg-gray-50 rounded-lg">
             <h3 className="text-sm font-medium mb-3">Choose Template</h3>
             <div className="grid grid-cols-4 gap-3">
-              {(['modern', 'professional', 'minimal', 'creative'] as const).map(
-                (template) => (
+              {[
+                { id: 'vibrant-yellow' as const, name: 'Vibrant Yellow', color: 'from-yellow-300 to-yellow-100' },
+                { id: 'elegant-purple' as const, name: 'Elegant Purple', color: 'from-purple-300 to-purple-100' },
+                { id: 'modern-gradient' as const, name: 'Modern Gradient', color: 'from-blue-500 to-purple-500' },
+                { id: 'professional-blue' as const, name: 'Professional Blue', color: 'from-blue-400 to-blue-200' },
+              ].map((template) => (
                   <button
-                    key={template}
+                    key={template.id}
                     onClick={() => {
-                      updateTemplate(template);
+                      updateTemplate(template.id);
                       setShowTemplatePicker(false);
                     }}
-                    className={`p-3 rounded-lg border-2 capitalize transition-colors ${
-                      currentPresentation.template === template
+                    className={`p-3 rounded-lg border-2 transition-colors ${
+                      currentPresentation.template === template.id
                         ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                     }`}
                   >
-                    {template}
+                    <div className={`w-full h-12 bg-gradient-to-br ${template.color} rounded mb-2`}></div>
+                    <p className="text-xs font-medium">{template.name}</p>
                   </button>
                 )
               )}
@@ -329,6 +344,15 @@ export default function EditorPage() {
         <ExportModal
           presentation={currentPresentation}
           onClose={() => setShowExportModal(false)}
+        />
+      )}
+
+      {/* Full Screen Presentation */}
+      {showFullScreen && (
+        <FullScreenPresentation
+          presentation={currentPresentation}
+          startSlide={currentSlideIndex}
+          onClose={() => setShowFullScreen(false)}
         />
       )}
     </div>

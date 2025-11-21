@@ -1,10 +1,10 @@
 import { Slide, Presentation } from '@/types/presentation';
 import {
-  ModernTemplate,
-  ProfessionalTemplate,
-  MinimalTemplate,
-  CreativeTemplate,
-} from './SlideTemplates';
+  VibrantYellowTemplate,
+  ElegantPurpleTemplate,
+  ModernGradientTemplate,
+  ProfessionalBlueTemplate,
+} from './ProfessionalTemplates';
 
 interface SlideRendererProps {
   slide: Slide;
@@ -20,10 +20,10 @@ export default function SlideRenderer({
   const isTitle = slideIndex === 0;
 
   const TemplateComponent = {
-    modern: ModernTemplate,
-    professional: ProfessionalTemplate,
-    minimal: MinimalTemplate,
-    creative: CreativeTemplate,
+    'vibrant-yellow': VibrantYellowTemplate,
+    'elegant-purple': ElegantPurpleTemplate,
+    'modern-gradient': ModernGradientTemplate,
+    'professional-blue': ProfessionalBlueTemplate,
   }[presentation.template];
 
   return (

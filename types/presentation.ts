@@ -1,15 +1,34 @@
+export interface SlideElement {
+  id: string;
+  type: 'text' | 'heading' | 'bullet-list' | 'image' | 'shape' | 'icon';
+  content: string | string[];
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  style?: {
+    fontSize?: string;
+    fontWeight?: string;
+    color?: string;
+    backgroundColor?: string;
+    borderRadius?: string;
+    padding?: string;
+    textAlign?: 'left' | 'center' | 'right';
+  };
+}
+
 export interface Slide {
   id: string;
   title: string;
   content: string[];
   speakerNotes: string;
+  elements?: SlideElement[];
+  layout?: 'default' | 'title' | 'content' | 'two-column' | 'image-text';
 }
 
 export interface Presentation {
   id: string;
   title: string;
   slides: Slide[];
-  template: 'modern' | 'professional' | 'minimal' | 'creative';
+  template: 'vibrant-yellow' | 'elegant-purple' | 'modern-gradient' | 'professional-blue';
   colorScheme: ColorScheme;
   createdAt: Date;
 }
@@ -30,40 +49,79 @@ export interface PresentationInput {
   tone: 'professional' | 'casual' | 'persuasive' | 'educational';
   targetAudience: string;
   additionalContext?: string;
-  template: 'modern' | 'professional' | 'minimal' | 'creative';
+  template: 'vibrant-yellow' | 'elegant-purple' | 'modern-gradient' | 'professional-blue';
 }
+
+export const THEMES = {
+  'vibrant-yellow': {
+    name: 'Vibrant Yellow',
+    primary: '#FFF500',
+    secondary: '#FFD700',
+    background: '#FFFACD',
+    text: '#000000',
+    accent: '#FF6B00',
+    border: '#000000',
+  },
+  'elegant-purple': {
+    name: 'Elegant Purple',
+    primary: '#C084FC',
+    secondary: '#A855F7',
+    background: '#F3E8FF',
+    text: '#4C1D95',
+    accent: '#8B5CF6',
+    border: '#7C3AED',
+  },
+  'modern-gradient': {
+    name: 'Modern Gradient',
+    primary: '#3B82F6',
+    secondary: '#8B5CF6',
+    background: 'linear-gradient(135deg, #667EEA 0%, #764BA2 100%)',
+    text: '#FFFFFF',
+    accent: '#60A5FA',
+    border: '#4F46E5',
+  },
+  'professional-blue': {
+    name: 'Professional Blue',
+    primary: '#1E40AF',
+    secondary: '#3B82F6',
+    background: '#EFF6FF',
+    text: '#1E3A8A',
+    accent: '#60A5FA',
+    border: '#2563EB',
+  },
+} as const;
 
 export const COLOR_SCHEMES: ColorScheme[] = [
   {
-    name: 'Ocean Blue',
-    primary: '#0ea5e9',
-    secondary: '#0369a1',
-    background: '#f0f9ff',
-    text: '#0c4a6e',
-    accent: '#38bdf8',
+    name: 'Vibrant Yellow',
+    primary: '#FFF500',
+    secondary: '#FFD700',
+    background: '#FFFACD',
+    text: '#000000',
+    accent: '#FF6B00',
   },
   {
-    name: 'Forest Green',
-    primary: '#10b981',
-    secondary: '#059669',
-    background: '#f0fdf4',
-    text: '#064e3b',
-    accent: '#34d399',
+    name: 'Elegant Purple',
+    primary: '#C084FC',
+    secondary: '#A855F7',
+    background: '#F3E8FF',
+    text: '#4C1D95',
+    accent: '#8B5CF6',
   },
   {
-    name: 'Sunset Orange',
-    primary: '#f97316',
-    secondary: '#ea580c',
-    background: '#fff7ed',
-    text: '#7c2d12',
-    accent: '#fb923c',
+    name: 'Modern Gradient',
+    primary: '#3B82F6',
+    secondary: '#8B5CF6',
+    background: '#667EEA',
+    text: '#FFFFFF',
+    accent: '#60A5FA',
   },
   {
-    name: 'Royal Purple',
-    primary: '#a855f7',
-    secondary: '#9333ea',
-    background: '#faf5ff',
-    text: '#581c87',
-    accent: '#c084fc',
+    name: 'Professional Blue',
+    primary: '#1E40AF',
+    secondary: '#3B82F6',
+    background: '#EFF6FF',
+    text: '#1E3A8A',
+    accent: '#60A5FA',
   },
 ];
