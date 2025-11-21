@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { usePresentationStore } from '@/lib/store';
 import SlideRenderer from '@/components/presentation/SlideRenderer';
+import EditableSlide from '@/components/presentation/EditableSlide';
 import FullScreenPresentation from '@/components/presentation/FullScreenPresentation';
 import { COLOR_SCHEMES } from '@/types/presentation';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
@@ -31,6 +32,9 @@ export default function EditorPage() {
     updateColorScheme,
     updateTitle,
     reorderSlides,
+    addElement,
+    updateElement,
+    deleteElement,
   } = usePresentationStore();
 
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -296,10 +300,19 @@ export default function EditorPage() {
         <div className="flex-1 flex flex-col bg-gray-100 p-8">
           <div className="flex-1 flex items-center justify-center">
             <div className="max-w-5xl w-full">
-              <SlideRenderer
+              <EditableSlide
                 slide={currentSlide}
                 presentation={currentPresentation}
                 slideIndex={currentSlideIndex}
+                onUpdateElement={(elementId, updates) =>
+                  updateElement(currentSlide.id, elementId, updates)
+                }
+                onDeleteElement={(elementId) =>
+                  deleteElement(currentSlide.id, elementId)
+                }
+                onAddElement={(element) =>
+                  addElement(currentSlide.id, element)
+                }
               />
 
               {/* Navigation Arrows */}

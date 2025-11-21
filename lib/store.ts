@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Presentation, PresentationInput, Slide, ColorScheme, COLOR_SCHEMES } from '@/types/presentation';
+import { Presentation, PresentationInput, Slide, ColorScheme, COLOR_SCHEMES, SlideElement } from '@/types/presentation';
 
 interface PresentationStore {
   currentPresentation: Presentation | null;
@@ -15,6 +15,10 @@ interface PresentationStore {
   updateTitle: (title: string) => void;
   setGenerating: (isGenerating: boolean, progress?: string) => void;
   reset: () => void;
+  // Element management
+  addElement: (slideId: string, element: SlideElement) => void;
+  updateElement: (slideId: string, elementId: string, updates: Partial<SlideElement>) => void;
+  deleteElement: (slideId: string, elementId: string) => void;
 }
 
 export const usePresentationStore = create<PresentationStore>((set) => ({
@@ -119,4 +123,61 @@ export const usePresentationStore = create<PresentationStore>((set) => ({
     set({ isGenerating, generationProgress: progress }),
 
   reset: () => set({ currentPresentation: null, isGenerating: false, generationProgress: '' }),
+
+  // Element management functions
+  addElement: (slideId, element) =>
+    set((state) => {
+      if (!state.currentPresentation) return state;
+      return {
+        currentPresentation: {
+          ...state.currentPresentation,
+          slides: state.currentPresentation.slides.map((slide) =>
+            slide.id === slideId
+              ? {
+                  ...slide,
+                  elements: [...(slide.elements || []), element],
+                }
+              : slide
+          ),
+        },
+      };
+    }),
+
+  updateElement: (slideId, elementId, updates) =>
+    set((state) => {
+      if (!state.currentPresentation) return state;
+      return {
+        currentPresentation: {
+          ...state.currentPresentation,
+          slides: state.currentPresentation.slides.map((slide) =>
+            slide.id === slideId
+              ? {
+                  ...slide,
+                  elements: (slide.elements || []).map((el) =>
+                    el.id === elementId ? { ...el, ...updates } : el
+                  ),
+                }
+              : slide
+          ),
+        },
+      };
+    }),
+
+  deleteElement: (slideId, elementId) =>
+    set((state) => {
+      if (!state.currentPresentation) return state;
+      return {
+        currentPresentation: {
+          ...state.currentPresentation,
+          slides: state.currentPresentation.slides.map((slide) =>
+            slide.id === slideId
+              ? {
+                  ...slide,
+                  elements: (slide.elements || []).filter((el) => el.id !== elementId),
+                }
+              : slide
+          ),
+        },
+      };
+    }),
 }));
