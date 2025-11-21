@@ -5,7 +5,7 @@ Create stunning, professional presentations in minutes using the power of AI.
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8)
-![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-00a67e)
+![Google Gemini](https://img.shields.io/badge/Google-Gemini%202.5%20Flash-4285F4)
 
 ## Overview
 Enable users to quickly create professional, visually appealing presentations using AI, demonstrating the practical value of AI in everyday work tasks.
@@ -14,7 +14,7 @@ Enable users to quickly create professional, visually appealing presentations us
 
 ### Prerequisites
 - Node.js 18+ installed
-- OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
+- Google AI API key ([Get one here](https://aistudio.google.com/app/apikey))
 
 ### Installation
 
@@ -34,9 +34,9 @@ npm install
 cp .env.example .env
 ```
 
-4. Add your OpenAI API key to `.env`:
+4. Add your Google AI API key to `.env`:
 ```
-OPENAI_API_KEY=your_openai_api_key_here
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
 ```
 
 5. Run the development server:
@@ -213,7 +213,7 @@ ai-presentation-app/
 - **Frontend Framework:** Next.js 15 with App Router
 - **Language:** TypeScript 5.7
 - **Styling:** Tailwind CSS 3.4
-- **AI Integration:** OpenAI GPT-4 Turbo
+- **AI Integration:** Google Gemini 2.5 Flash via AI SDK
 - **State Management:** Zustand
 - **Drag & Drop:** react-beautiful-dnd
 - **PDF Export:** jsPDF + html2canvas
@@ -241,7 +241,7 @@ This app can be deployed to Vercel, Netlify, or any platform that supports Next.
 
 1. Push your code to GitHub
 2. Connect your repository to Vercel
-3. Add `OPENAI_API_KEY` to environment variables
+3. Add `GOOGLE_GENERATIVE_AI_API_KEY` to environment variables
 4. Deploy
 
 ## Future Enhancements
