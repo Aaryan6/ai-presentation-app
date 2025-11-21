@@ -1,8 +1,89 @@
 import { NextResponse } from 'next/server';
 import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
-import { PresentationInput, Presentation, Slide, COLOR_SCHEMES } from '@/types/presentation';
+import { PresentationInput, Presentation, Slide, SlideElement, COLOR_SCHEMES, THEMES } from '@/types/presentation';
 import { z } from 'zod';
+
+// Helper to create elements from AI content
+function createSlideElements(
+  title: string,
+  content: string[],
+  isTitle: boolean,
+  template: keyof typeof THEMES,
+  slideIndex: number
+): SlideElement[] {
+  const theme = THEMES[template];
+  const elements: SlideElement[] = [];
+  const timestamp = Date.now() + slideIndex;
+
+  if (isTitle) {
+    // Title slide layout - centered heading
+    elements.push({
+      id: `el-${timestamp}-heading`,
+      type: 'heading',
+      content: title,
+      position: { x: 80, y: 180 },
+      size: { width: 800, height: 80 },
+      style: {
+        fontSize: '48px',
+        fontWeight: 'bold',
+        color: theme.text,
+        textAlign: 'center',
+      },
+    });
+
+    // Subtitle if there's content
+    if (content.length > 0) {
+      elements.push({
+        id: `el-${timestamp}-subtitle`,
+        type: 'text',
+        content: content[0],
+        position: { x: 180, y: 280 },
+        size: { width: 600, height: 60 },
+        style: {
+          fontSize: '24px',
+          fontWeight: 'normal',
+          color: theme.text,
+          textAlign: 'center',
+        },
+      });
+    }
+  } else {
+    // Content slide layout
+    elements.push({
+      id: `el-${timestamp}-heading`,
+      type: 'heading',
+      content: title,
+      position: { x: 60, y: 40 },
+      size: { width: 840, height: 60 },
+      style: {
+        fontSize: '36px',
+        fontWeight: 'bold',
+        color: theme.text,
+        textAlign: 'left',
+      },
+    });
+
+    // Bullet points
+    if (content.length > 0) {
+      elements.push({
+        id: `el-${timestamp}-bullets`,
+        type: 'bullet-list',
+        content: content,
+        position: { x: 60, y: 120 },
+        size: { width: 840, height: 380 },
+        style: {
+          fontSize: '20px',
+          fontWeight: 'normal',
+          color: theme.text,
+          textAlign: 'left',
+        },
+      });
+    }
+  }
+
+  return elements;
+}
 
 // Define the schema for the presentation
 const presentationSchema = z.object({
@@ -55,13 +136,20 @@ Guidelines:
       temperature: 0.7,
     });
 
-    // Add IDs to slides
-    const slides: Slide[] = generatedContent.slides.map((slide: any, index: number) => ({
-      id: `slide-${Date.now()}-${index}`,
-      title: slide.title,
-      content: slide.content,
-      speakerNotes: slide.speakerNotes || '',
-    }));
+    // Add IDs to slides and create editable elements
+    const slides: Slide[] = generatedContent.slides.map((slide: any, index: number) => {
+      const slideId = `slide-${Date.now()}-${index}`;
+      const isTitle = index === 0; // First slide is title slide
+
+      return {
+        id: slideId,
+        title: slide.title,
+        content: slide.content,
+        speakerNotes: slide.speakerNotes || '',
+        elements: createSlideElements(slide.title, slide.content, isTitle, input.template, index),
+        layout: isTitle ? 'title' : 'content',
+      };
+    });
 
     // Create the presentation object
     const presentation: Presentation = {

@@ -2,34 +2,43 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
   ChevronLeft,
   ChevronRight,
   Download,
-  Palette,
   Layout,
-  Plus,
   Trash2,
   Edit3,
-  GripVertical,
-  Sparkles,
   Maximize,
+  Type,
+  Square,
+  Image as ImageIcon,
+  List,
+  Heading,
 } from 'lucide-react';
 import { usePresentationStore } from '@/lib/store';
-import SlideRenderer from '@/components/presentation/SlideRenderer';
-import EditableSlide from '@/components/presentation/EditableSlide';
-import FullScreenPresentation from '@/components/presentation/FullScreenPresentation';
-import { COLOR_SCHEMES } from '@/types/presentation';
+import { THEMES, SlideElement } from '@/types/presentation';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+
+// Dynamically import Konva editor to avoid SSR issues
+const KonvaSlideEditor = dynamic(
+  () => import('@/components/presentation/KonvaSlideEditor'),
+  { ssr: false, loading: () => <div className="w-[960px] h-[540px] bg-gray-200 animate-pulse rounded-lg" /> }
+);
+
+// Dynamically import FullScreen presentation
+const FullScreenPresentation = dynamic(
+  () => import('@/components/presentation/FullScreenPresentation'),
+  { ssr: false }
+);
 
 export default function EditorPage() {
   const router = useRouter();
   const {
     currentPresentation,
-    updateSlide,
     deleteSlide,
     updateTemplate,
-    updateColorScheme,
     updateTitle,
     reorderSlides,
     addElement,
@@ -38,9 +47,9 @@ export default function EditorPage() {
   } = usePresentationStore();
 
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
-  const [showColorPicker, setShowColorPicker] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
@@ -51,21 +60,45 @@ export default function EditorPage() {
     }
   }, [currentPresentation, router]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' && selectedElementId && currentPresentation) {
+        const currentSlide = currentPresentation.slides[currentSlideIndex];
+        deleteElement(currentSlide.id, selectedElementId);
+        setSelectedElementId(null);
+      }
+      if (e.key === 'Escape') {
+        setSelectedElementId(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElementId, currentPresentation, currentSlideIndex, deleteElement]);
+
   if (!currentPresentation) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   const currentSlide = currentPresentation.slides[currentSlideIndex];
+  const theme = THEMES[currentPresentation.template];
 
   const handleNextSlide = () => {
     if (currentSlideIndex < currentPresentation.slides.length - 1) {
       setCurrentSlideIndex(currentSlideIndex + 1);
+      setSelectedElementId(null);
     }
   };
 
   const handlePrevSlide = () => {
     if (currentSlideIndex > 0) {
       setCurrentSlideIndex(currentSlideIndex - 1);
+      setSelectedElementId(null);
     }
   };
 
@@ -87,70 +120,103 @@ export default function EditorPage() {
     setCurrentSlideIndex(result.destination.index);
   };
 
+  const addNewElement = (type: SlideElement['type']) => {
+    const baseElement: SlideElement = {
+      id: `element-${Date.now()}`,
+      type,
+      content: '',
+      position: { x: 100, y: 150 },
+      size: { width: 300, height: 50 },
+      style: {
+        fontSize: '16px',
+        color: theme.text,
+        backgroundColor: 'transparent',
+        padding: '8px',
+        textAlign: 'left',
+      },
+    };
+
+    switch (type) {
+      case 'heading':
+        baseElement.content = 'New Heading';
+        baseElement.size = { width: 600, height: 60 };
+        baseElement.style = { ...baseElement.style, fontSize: '32px', fontWeight: 'bold' };
+        break;
+      case 'text':
+        baseElement.content = 'Click to edit text';
+        baseElement.size = { width: 400, height: 80 };
+        break;
+      case 'bullet-list':
+        baseElement.content = ['First item', 'Second item', 'Third item'];
+        baseElement.size = { width: 400, height: 150 };
+        break;
+      case 'shape':
+        baseElement.content = '';
+        baseElement.size = { width: 150, height: 150 };
+        baseElement.style = { ...baseElement.style, backgroundColor: theme.primary, borderRadius: '8px' };
+        break;
+      case 'image':
+        baseElement.content = 'Image placeholder';
+        baseElement.size = { width: 300, height: 200 };
+        break;
+    }
+
+    addElement(currentSlide.id, baseElement);
+    setSelectedElementId(baseElement.id);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gray-900 flex flex-col">
       {/* Top Bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/')}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-400 hover:text-white transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
+
             {isEditingTitle ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
-                  onBlur={handleSaveTitle}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-                  className="text-xl font-semibold border-b-2 border-blue-600 outline-none"
-                  autoFocus
-                />
-              </div>
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                onBlur={handleSaveTitle}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
+                className="text-lg font-semibold bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white outline-none focus:border-blue-500"
+                autoFocus
+              />
             ) : (
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold text-gray-800">
-                  {currentPresentation.title}
-                </h1>
-                <button
-                  onClick={handleEditTitle}
-                  className="p-1 hover:bg-gray-100 rounded"
-                >
-                  <Edit3 className="w-4 h-4 text-gray-400" />
-                </button>
-              </div>
+              <button
+                onClick={handleEditTitle}
+                className="flex items-center gap-2 text-white hover:text-blue-400 transition-colors"
+              >
+                <span className="text-lg font-semibold">{currentPresentation.title}</span>
+                <Edit3 className="w-4 h-4 opacity-50" />
+              </button>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowTemplatePicker(!showTemplatePicker)}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 transition-colors"
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center gap-2 text-white text-sm transition-colors"
             >
               <Layout className="w-4 h-4" />
-              Template
-            </button>
-            <button
-              onClick={() => setShowColorPicker(!showColorPicker)}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <Palette className="w-4 h-4" />
-              Colors
+              Theme
             </button>
             <button
               onClick={() => setShowFullScreen(true)}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 transition-colors"
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center gap-2 text-white text-sm transition-colors"
             >
               <Maximize className="w-4 h-4" />
               Present
             </button>
             <button
               onClick={() => setShowExportModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg flex items-center gap-2 transition-colors"
+              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-2 text-white text-sm transition-colors"
             >
               <Download className="w-4 h-4" />
               Export
@@ -158,75 +224,41 @@ export default function EditorPage() {
           </div>
         </div>
 
-        {/* Template Picker */}
+        {/* Theme Picker Dropdown */}
         {showTemplatePicker && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-medium mb-3">Choose Template</h3>
-            <div className="grid grid-cols-4 gap-3">
-              {[
-                { id: 'vibrant-yellow' as const, name: 'Vibrant Yellow', color: 'from-yellow-300 to-yellow-100' },
-                { id: 'elegant-purple' as const, name: 'Elegant Purple', color: 'from-purple-300 to-purple-100' },
-                { id: 'modern-gradient' as const, name: 'Modern Gradient', color: 'from-blue-500 to-purple-500' },
-                { id: 'professional-blue' as const, name: 'Professional Blue', color: 'from-blue-400 to-blue-200' },
-              ].map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => {
-                      updateTemplate(template.id);
-                      setShowTemplatePicker(false);
-                    }}
-                    className={`p-3 rounded-lg border-2 transition-colors ${
-                      currentPresentation.template === template.id
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }`}
-                  >
-                    <div className={`w-full h-12 bg-gradient-to-br ${template.color} rounded mb-2`}></div>
-                    <p className="text-xs font-medium">{template.name}</p>
-                  </button>
-                )
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Color Picker */}
-        {showColorPicker && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-medium mb-3">Choose Color Scheme</h3>
-            <div className="grid grid-cols-4 gap-3">
-              {COLOR_SCHEMES.map((scheme) => (
+          <div className="absolute top-14 right-4 z-50 bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-xl">
+            <h3 className="text-white text-sm font-medium mb-3">Choose Theme</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(THEMES).map(([key, themeData]) => (
                 <button
-                  key={scheme.name}
+                  key={key}
                   onClick={() => {
-                    updateColorScheme(scheme);
-                    setShowColorPicker(false);
+                    updateTemplate(key as keyof typeof THEMES);
+                    setShowTemplatePicker(false);
                   }}
-                  className={`p-3 rounded-lg border-2 transition-colors ${
-                    currentPresentation.colorScheme.name === scheme.name
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  className={`p-2 rounded-lg border-2 transition-colors ${
+                    currentPresentation.template === key
+                      ? 'border-blue-500'
+                      : 'border-gray-600 hover:border-gray-500'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-6 h-6 rounded-full"
-                      style={{ backgroundColor: scheme.primary }}
-                    />
-                    <span className="text-sm">{scheme.name}</span>
-                  </div>
+                  <div
+                    className="w-20 h-12 rounded mb-1"
+                    style={{ background: themeData.background }}
+                  />
+                  <p className="text-xs text-gray-300">{themeData.name}</p>
                 </button>
               ))}
             </div>
           </div>
         )}
-      </div>
+      </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex">
         {/* Left Sidebar - Slide Navigator */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="font-semibold text-gray-800">
+        <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+          <div className="p-3 border-b border-gray-700">
+            <h2 className="text-white font-medium text-sm">
               Slides ({currentPresentation.slides.length})
             </h2>
           </div>
@@ -237,7 +269,7 @@ export default function EditorPage() {
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className="flex-1 overflow-y-auto p-4 space-y-3"
+                  className="flex-1 overflow-y-auto p-2 space-y-2"
                 >
                   {currentPresentation.slides.map((slide, index) => (
                     <Draggable key={slide.id} draggableId={slide.id} index={index}>
@@ -245,31 +277,28 @@ export default function EditorPage() {
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          className={`group relative cursor-pointer transition-all ${
+                          {...provided.dragHandleProps}
+                          className={`cursor-pointer transition-all rounded-lg overflow-hidden ${
                             index === currentSlideIndex
-                              ? 'ring-2 ring-blue-600'
-                              : 'hover:ring-2 hover:ring-gray-300'
+                              ? 'ring-2 ring-blue-500'
+                              : 'hover:ring-2 hover:ring-gray-600'
                           } ${snapshot.isDragging ? 'opacity-50' : ''}`}
-                          onClick={() => setCurrentSlideIndex(index)}
+                          onClick={() => {
+                            setCurrentSlideIndex(index);
+                            setSelectedElementId(null);
+                          }}
                         >
-                          <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                            <div className="scale-[0.2] origin-top-left w-[500%] h-[500%]">
-                              <SlideRenderer
-                                slide={slide}
-                                presentation={currentPresentation}
-                                slideIndex={index}
-                              />
-                            </div>
+                          <div
+                            className="aspect-video p-2 text-xs"
+                            style={{
+                              background: theme.background,
+                              color: theme.text,
+                            }}
+                          >
+                            <p className="font-bold truncate">{slide.title}</p>
                           </div>
-                          <div className="mt-2 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div {...provided.dragHandleProps}>
-                                <GripVertical className="w-4 h-4 text-gray-400" />
-                              </div>
-                              <p className="text-sm font-medium text-gray-700 truncate">
-                                {index + 1}. {slide.title}
-                              </p>
-                            </div>
+                          <div className="bg-gray-700 px-2 py-1 flex items-center justify-between">
+                            <span className="text-xs text-gray-400">{index + 1}</span>
                             {currentPresentation.slides.length > 1 && (
                               <button
                                 onClick={(e) => {
@@ -279,9 +308,9 @@ export default function EditorPage() {
                                     setCurrentSlideIndex(currentSlideIndex - 1);
                                   }
                                 }}
-                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-opacity"
+                                className="p-1 hover:bg-red-600 rounded transition-colors"
                               >
-                                <Trash2 className="w-4 h-4 text-red-600" />
+                                <Trash2 className="w-3 h-3 text-gray-400 hover:text-white" />
                               </button>
                             )}
                           </div>
@@ -294,62 +323,113 @@ export default function EditorPage() {
               )}
             </Droppable>
           </DragDropContext>
-        </div>
+        </aside>
 
-        {/* Main Canvas */}
-        <div className="flex-1 flex flex-col bg-gray-100 p-8">
-          <div className="flex-1 flex items-center justify-center">
-            <div className="max-w-5xl w-full">
-              <EditableSlide
-                slide={currentSlide}
-                presentation={currentPresentation}
-                slideIndex={currentSlideIndex}
-                onUpdateElement={(elementId, updates) =>
-                  updateElement(currentSlide.id, elementId, updates)
-                }
-                onDeleteElement={(elementId) =>
-                  deleteElement(currentSlide.id, elementId)
-                }
-                onAddElement={(element) =>
-                  addElement(currentSlide.id, element)
-                }
-              />
+        {/* Main Canvas Area */}
+        <main className="flex-1 flex flex-col bg-gray-900 overflow-hidden">
+          {/* Toolbar - OUTSIDE the canvas */}
+          <div className="bg-gray-800 border-b border-gray-700 px-4 py-2">
+            <div className="flex items-center gap-1">
+              <span className="text-gray-400 text-xs mr-2">Add:</span>
+              <button
+                onClick={() => addNewElement('heading')}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded flex items-center gap-2 text-white text-sm transition-colors"
+                title="Add Heading"
+              >
+                <Heading className="w-4 h-4" />
+                Heading
+              </button>
+              <button
+                onClick={() => addNewElement('text')}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded flex items-center gap-2 text-white text-sm transition-colors"
+                title="Add Text"
+              >
+                <Type className="w-4 h-4" />
+                Text
+              </button>
+              <button
+                onClick={() => addNewElement('bullet-list')}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded flex items-center gap-2 text-white text-sm transition-colors"
+                title="Add List"
+              >
+                <List className="w-4 h-4" />
+                List
+              </button>
+              <button
+                onClick={() => addNewElement('shape')}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded flex items-center gap-2 text-white text-sm transition-colors"
+                title="Add Shape"
+              >
+                <Square className="w-4 h-4" />
+                Shape
+              </button>
+              <button
+                onClick={() => addNewElement('image')}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded flex items-center gap-2 text-white text-sm transition-colors"
+                title="Add Image"
+              >
+                <ImageIcon className="w-4 h-4" />
+                Image
+              </button>
 
-              {/* Navigation Arrows */}
-              <div className="flex justify-between mt-6">
+              <div className="flex-1" />
+
+              {selectedElementId && (
                 <button
-                  onClick={handlePrevSlide}
-                  disabled={currentSlideIndex === 0}
-                  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                    currentSlideIndex === 0
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
+                  onClick={() => {
+                    deleteElement(currentSlide.id, selectedElementId);
+                    setSelectedElementId(null);
+                  }}
+                  className="px-3 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center gap-2 text-white text-sm transition-colors"
                 >
-                  <ChevronLeft className="w-5 h-5" />
-                  Previous
+                  <Trash2 className="w-4 h-4" />
+                  Delete
                 </button>
-
-                <div className="text-sm text-gray-600 flex items-center">
-                  Slide {currentSlideIndex + 1} of {currentPresentation.slides.length}
-                </div>
-
-                <button
-                  onClick={handleNextSlide}
-                  disabled={currentSlideIndex === currentPresentation.slides.length - 1}
-                  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                    currentSlideIndex === currentPresentation.slides.length - 1
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Next
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
+              )}
             </div>
           </div>
-        </div>
+
+          {/* Canvas Container */}
+          <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
+            <KonvaSlideEditor
+              elements={currentSlide.elements || []}
+              presentation={currentPresentation}
+              slideIndex={currentSlideIndex}
+              selectedId={selectedElementId}
+              onSelect={setSelectedElementId}
+              onUpdateElement={(id, updates) => updateElement(currentSlide.id, id, updates)}
+              onDeleteElement={(id) => {
+                deleteElement(currentSlide.id, id);
+                setSelectedElementId(null);
+              }}
+            />
+          </div>
+
+          {/* Bottom Navigation */}
+          <div className="bg-gray-800 border-t border-gray-700 px-4 py-3 flex items-center justify-between">
+            <button
+              onClick={handlePrevSlide}
+              disabled={currentSlideIndex === 0}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-2 text-white text-sm transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </button>
+
+            <span className="text-gray-400 text-sm">
+              Slide {currentSlideIndex + 1} of {currentPresentation.slides.length}
+            </span>
+
+            <button
+              onClick={handleNextSlide}
+              disabled={currentSlideIndex === currentPresentation.slides.length - 1}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-2 text-white text-sm transition-colors"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </main>
       </div>
 
       {/* Export Modal */}
@@ -393,7 +473,6 @@ function ExportModal({
     setIsExporting(true);
 
     try {
-      // Import dynamically to avoid SSR issues
       if (exportType === 'pdf') {
         const { exportToPDF } = await import('@/lib/export');
         await exportToPDF(presentation);
@@ -401,7 +480,6 @@ function ExportModal({
         const { exportToHTML } = await import('@/lib/export');
         await exportToHTML(presentation);
       }
-
       alert('Export successful! Check your downloads folder.');
       onClose();
     } catch (error) {
@@ -413,53 +491,41 @@ function ExportModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-            <Download className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Export Presentation</h2>
-            <p className="text-sm text-gray-600">Enter your email to download</p>
-          </div>
-        </div>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-700">
+        <h2 className="text-xl font-bold text-white mb-4">Export Presentation</h2>
 
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address *
-            </label>
+            <label className="block text-sm text-gray-300 mb-2">Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Export Format
-            </label>
-            <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm text-gray-300 mb-2">Format</label>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setExportType('pdf')}
-                className={`px-4 py-3 rounded-lg border-2 transition-colors ${
+                className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                   exportType === 'pdf'
-                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-600/20 text-white'
+                    : 'border-gray-600 text-gray-400 hover:border-gray-500'
                 }`}
               >
                 PDF
               </button>
               <button
                 onClick={() => setExportType('html')}
-                className={`px-4 py-3 rounded-lg border-2 transition-colors ${
+                className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                   exportType === 'html'
-                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-600/20 text-white'
+                    : 'border-gray-600 text-gray-400 hover:border-gray-500'
                 }`}
               >
                 HTML
@@ -468,30 +534,19 @@ function ExportModal({
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-6">
           <button
             onClick={onClose}
-            disabled={isExporting}
-            className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {isExporting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download className="w-5 h-5" />
-                Export
-              </>
-            )}
+            {isExporting ? 'Exporting...' : 'Export'}
           </button>
         </div>
       </div>
